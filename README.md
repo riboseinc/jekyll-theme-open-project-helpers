@@ -1,6 +1,6 @@
-# Helper utils for Open Project gem-based Jekyll theme by Ribose
+# Open Project theme helpers
 
-This Jekyll plugin is necessary for the Open Project theme to work.
+Jekyll plugin for the Open Project gem-based Jekyll theme by Ribose.
 
 Currently, its functionality includes filtered tag page generation
 for open software and specification indexes on an open hub site.
