@@ -1,4 +1,4 @@
-module Jekyll
+module OpenProjectHelpers
   # On an open hub site, Jekyll Open Project theme assumes the existence of two types
   # of item indexes: software and specs, where items are gathered
   # from across open projects in the hub.
@@ -10,7 +10,7 @@ module Jekyll
   # Note: this expects "_pages/<index page>.html" to be present in site source,
   # so it would fail if theme setup instructions were not followed fully.
 
-  class FilteredIndexPage < Page
+  class FilteredIndexPage < Jekyll::Page
     def initialize(site, base, dir, tag, items, index_page)
       @site = site
       @base = base
@@ -24,7 +24,7 @@ module Jekyll
     end
   end
 
-  class FilteredIndexPageGenerator < Generator
+  class FilteredIndexPageGenerator < Jekyll::Generator
     safe true
 
     def generate(site)
