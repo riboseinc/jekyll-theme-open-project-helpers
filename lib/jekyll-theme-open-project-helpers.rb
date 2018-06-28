@@ -2,6 +2,12 @@ require 'digest/md5'
 require 'jekyll-data/reader'
 require 'git'
 
+#
+# Below deals with fetching each open project’s data from its site’s repo
+# (such as posts, template includes, software and specs)
+# and reading it into 'projects' collection docs.
+#
+
 class ProjectDocsReader < Jekyll::DataReader
 
   def read(dir)
@@ -68,6 +74,11 @@ class OpenProjectReader < JekyllData::Reader
     end
   end
 end
+
+
+#
+# Below deals with blog and other indexes
+#
 
 Jekyll::Hooks.register :site, :after_init do |site|
   if site.theme
