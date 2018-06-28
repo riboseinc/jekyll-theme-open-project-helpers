@@ -13,6 +13,20 @@ module Jekyll
   end
 end
 
+def is_hub(site)
+  # If there’re projects defined, we assume it is indeed
+  # a Jekyll Open Project hub site.
+  if site.collections.key? 'projects'
+    if site.collections['projects'] != nil
+      if site.collections['projects'].docs.length > 0
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
 module OpenProjectHelpers
 
   # On an open hub site, Jekyll Open Project theme assumes the existence of two types
@@ -57,10 +71,7 @@ module OpenProjectHelpers
     safe true
 
     def generate(site)
-
-      # If there’s a “projects” collection, we assume it is indeed
-      # a Jekyll Open Project hub site.
-      if site.collections.key? 'projects'
+      if is_hub(site)
 
         INDEXES.each do |index_name, params|
           items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
@@ -115,10 +126,7 @@ module OpenProjectHelpers
     safe true
 
     def generate(site)
-
-      # If there’s a “projects” collection, we assume it is indeed
-      # a Jekyll Open Project hub site.
-      if site.collections.key? 'projects'
+      if is_hub(site)
 
         INDEXES.each do |index_name, params|
           items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
@@ -143,10 +151,7 @@ module OpenProjectHelpers
 
       site_posts = site.posts.docs
 
-      # If there’s a “projects” collection, we assume it is indeed
-      # a Jekyll Open Project hub site.
-      if site.collections.key? 'projects'
-
+      if is_hub(site)
         # Get documents representing projects
         projects = site.collections['projects'].docs.select do |item|
           pieces = item.url.split('/')
