@@ -1,4 +1,79 @@
 require 'digest/md5'
+require 'jekyll-data/reader'
+require 'git'
+
+class ProjectDocsReader < Jekyll::DataReader
+
+  def read(dir)
+    read_project_subdir(dir)
+  end
+
+  def read_project_subdir(dir, nested=false)
+    return unless File.directory?(dir) && !@entry_filter.symlink?(dir)
+
+    collection = @site.collections['projects']
+
+    entries = Dir.chdir(dir) do
+      Dir["*.{md,markdown}"] + Dir["*"].select { |fn| File.directory?(fn) }
+    end
+
+    entries.each do |entry|
+      path = File.join(dir, entry)
+
+      if File.directory?(path)
+        read_project_subdir(path, nested=true)
+      elsif nested or (File.basename(entry, '.*') != 'index')
+        doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
+        doc.read
+        collection.docs << doc
+      end
+    end
+  end
+end
+
+class OpenProjectReader < JekyllData::Reader
+
+  def read
+    super
+
+    project_indexes = @site.collections['projects'].docs.select do |doc|
+      pieces = doc.url.split('/')
+      pieces.length == 4 and pieces[1] == 'projects' and pieces[3] == 'index.html'
+    end
+
+    project_indexes.each do |project|
+      repo_path = project.path.split('/')[0..-2].join('/')
+      git_dir = File.join(repo_path, '.git')
+
+      unless File.exists? git_dir
+        repo = Git.init(repo_path)
+
+        remote_repo = project['site']['git_repo_url']
+        repo.add_remote('origin', remote_repo)
+
+        repo.config('core.sparseCheckout', true)
+        open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
+          f << "_includes/\n"
+          f << "_posts/\n"
+          f << "_software/\n"
+          f << "_specs/\n"
+        }
+
+        repo.fetch
+        repo.reset_hard
+        repo.checkout('origin/master', { :f => true })
+
+        ProjectDocsReader.new(site).read(repo_path)
+      end
+    end
+  end
+end
+
+Jekyll::Hooks.register :site, :after_init do |site|
+  if site.theme
+    site.reader = OpenProjectReader::new(site)
+  end
+end
 
 module Jekyll
   # Monkey-patching Site to add a custom property holding combined blog post array
