@@ -110,19 +110,6 @@ module OpenProjectHelpers
   # Below passes the `items` variable to normal (unfiltered)
   # index page layout.
 
-  class IndexPage < Jekyll::Page
-    def initialize(site, base, dir, items, index_page)
-      @site = site
-      @base = base
-      @dir = dir
-      @name = 'index.html'
-
-      self.process(@name)
-      self.read_yaml(File.join(base, '_pages'), "#{index_page}.html")
-      self.data['items'] = items
-    end
-  end
-
   class IndexPageGenerator < Jekyll::Generator
     safe true
 
