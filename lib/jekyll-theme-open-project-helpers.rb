@@ -101,6 +101,7 @@ module OpenProjectHelpers
               index_name)
           end
         end
+
       end
     end
   end
@@ -133,6 +134,7 @@ module OpenProjectHelpers
           page = site.site_payload["site"]["pages"].detect { |p| p.url == "/#{index_name}/" }
           page.data['items'] = items
         end
+
       end
     end
   end
@@ -148,7 +150,6 @@ module OpenProjectHelpers
     safe true
 
     def generate(site)
-
       site_posts = site.posts.docs
 
       if is_hub(site)
@@ -174,8 +175,10 @@ module OpenProjectHelpers
         end
 
         posts_combined = (project_posts + site_posts).sort_by(&:date).reverse
+
       else
         posts_combined = site_posts
+
       end
 
       # On each post, replace authors’ emails with corresponding md5 hashes
