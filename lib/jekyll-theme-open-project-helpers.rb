@@ -2,102 +2,6 @@ require 'digest/md5'
 require 'jekyll-data/reader'
 require 'git'
 
-#
-# Below deals with fetching each open project’s data from its site’s repo
-# (such as posts, template includes, software and specs)
-# and reading it into 'projects' collection docs.
-#
-
-class ProjectDocsReader < Jekyll::DataReader
-
-  def read(dir)
-    read_project_subdir(dir)
-  end
-
-  def read_project_subdir(dir, nested=false)
-    return unless File.directory?(dir) && !@entry_filter.symlink?(dir)
-
-    collection = @site.collections['projects']
-
-    entries = Dir.chdir(dir) do
-      Dir["*.{md,markdown}"] + Dir["*"].select { |fn| File.directory?(fn) }
-    end
-
-    entries.each do |entry|
-      path = File.join(dir, entry)
-
-      if File.directory?(path)
-        read_project_subdir(path, nested=true)
-      elsif nested or (File.basename(entry, '.*') != 'index')
-        doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
-        doc.read
-        collection.docs << doc
-      end
-    end
-  end
-end
-
-class OpenProjectReader < JekyllData::Reader
-
-  def read
-    super
-
-    project_indexes = @site.collections['projects'].docs.select do |doc|
-      pieces = doc.url.split('/')
-      pieces.length == 4 and pieces[1] == 'projects' and pieces[3] == 'index.html'
-    end
-
-    project_indexes.each do |project|
-      repo_path = project.path.split('/')[0..-2].join('/')
-      git_dir = File.join(repo_path, '.git')
-
-      unless File.exists? git_dir
-        repo = Git.init(repo_path)
-
-        remote_repo = project['site']['git_repo_url']
-        repo.add_remote('origin', remote_repo)
-
-        repo.config('core.sparseCheckout', true)
-        open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
-          f << "_includes/\n"
-          f << "_posts/\n"
-          f << "_software/\n"
-          f << "_specs/\n"
-        }
-
-        repo.fetch
-        repo.reset_hard
-        repo.checkout('origin/master', { :f => true })
-
-        ProjectDocsReader.new(site).read(repo_path)
-      end
-    end
-  end
-end
-
-
-#
-# Below deals with blog and other indexes
-#
-
-Jekyll::Hooks.register :site, :after_init do |site|
-  if site.theme
-    site.reader = OpenProjectReader::new(site)
-  end
-end
-
-module Jekyll
-  # Monkey-patching Site to add a custom property holding combined blog post array
-  # and speed up generation.
-
-  class Site
-    attr_accessor :posts_combined
-
-    def posts_combined
-      @posts_combined
-    end
-  end
-end
 
 def is_hub(site)
   # If there’re projects defined, we assume it is indeed
@@ -113,6 +17,172 @@ def is_hub(site)
   return false
 end
 
+class CollectionDocReader < Jekyll::DataReader
+
+  def read(dir, collection)
+    read_project_subdir(dir, collection)
+  end
+
+  def read_project_subdir(dir, collection, nested=false)
+    return unless File.directory?(dir) && !@entry_filter.symlink?(dir)
+
+    entries = Dir.chdir(dir) do
+      Dir["*.{md,markdown,html}"] + Dir["*"].select { |fn| File.directory?(fn) }
+    end
+
+    entries.each do |entry|
+      path = File.join(dir, entry)
+
+      if File.directory?(path)
+        read_project_subdir(path, collection, nested=true)
+      elsif nested or (File.basename(entry, '.*') != 'index')
+        doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
+        doc.read
+        collection.docs << doc
+      end
+    end
+  end
+end
+
+
+#
+# Below deals with fetching each open project’s data from its site’s repo
+# (such as posts, template includes, software and specs)
+# and reading it into 'projects' collection docs.
+#
+
+class OpenProjectReader < JekyllData::Reader
+
+  def read
+    super
+    if is_hub(@site)
+      fetch_and_read_projects
+    else
+      fetch_and_read_docs
+    end
+  end
+
+  private
+
+  def fetch_and_read_projects
+    project_indexes = @site.collections['projects'].docs.select do |doc|
+      pieces = doc.id.split('/')
+      pieces.length == 4 and pieces[1] == 'projects' and pieces[3] == 'index'
+    end
+    project_indexes.each do |project|
+      project_path = project.path.split('/')[0..-2].join('/')
+
+      did_check_out = git_sparse_checkout(
+        project_path,
+        project['site']['git_repo_url'],
+        ['_includes/', '_posts/', '_software/', '_specs/'])
+
+      if did_check_out
+        CollectionDocReader.new(site).read(
+          project_path,
+          @site.collections['projects'])
+      end
+    end
+  end
+
+  def fetch_and_read_docs
+
+    # Software
+    software_entry_points = @site.collections['software'].docs.select do |doc|
+      pieces = doc.id.split('/')
+      product_name = pieces[2]
+      last_piece = pieces[-1]
+
+      doc.data.key?('docs') and
+      doc.data['docs']['git_repo_url'] and
+      pieces[1] == 'software' and
+      last_piece == product_name
+    end
+    software_entry_points.each do |index_doc|
+      item_name = index_doc.id.split('/')[-1]
+      docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
+
+      did_check_out = git_sparse_checkout(
+        docs_path,
+        index_doc['docs']['git_repo_url'],
+        [index_doc['docs']['git_repo_subtree']])
+
+      if did_check_out
+        CollectionDocReader.new(site).read(
+          docs_path,
+          @site.collections['software'])
+      end
+    end
+
+    # Specs
+    spec_entry_points = @site.collections['specs'].docs.select do |doc|
+      pieces = doc.id.split('/')
+      product_name = pieces[2]
+      last_piece = pieces[-1]
+
+      doc.data.key?('docs') and
+      doc.data['docs']['git_repo_url'] and
+      pieces[1] == 'specs' and
+      last_piece == product_name
+    end
+    spec_entry_points.each do |index_doc|
+      item_name = index_doc.id.split('/')[-1]
+      docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
+
+      did_check_out = git_sparse_checkout(
+        docs_path,
+        index_doc['docs']['git_repo_url'],
+        [index_doc['docs']['git_repo_subtree']])
+
+      if did_check_out
+        CollectionDocReader.new(site).read(
+          docs_path,
+          @site.collections['software'])
+      end
+    end
+  end
+
+  def git_sparse_checkout(repo_path, remote_url, subtrees)
+    # Returns boolean indicating whether the checkout happened
+
+    git_dir = File.join(repo_path, '.git')
+    unless File.exists? git_dir
+      repo = Git.init(repo_path)
+
+      repo.add_remote('origin', remote_url)
+
+      repo.config('core.sparseCheckout', true)
+      open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
+        subtrees.each { |path|
+          f << "#{path}\n"
+        }
+      }
+
+      repo.fetch
+      repo.reset_hard
+      repo.checkout('origin/master', { :f => true })
+
+      return true
+
+    else
+      return false
+
+    end
+  end
+end
+
+
+Jekyll::Hooks.register :site, :after_init do |site|
+  if site.theme  # TODO: Check theme name
+    site.reader = OpenProjectReader::new(site)
+  end
+end
+
+
+#
+# Below deals with blog and other indexes
+#
+
 module OpenProjectHelpers
 
   # On an open hub site, Jekyll Open Project theme assumes the existence of two types
@@ -123,10 +193,10 @@ module OpenProjectHelpers
   # and the fact that Jekyll doesn’t intuitively handle nested collections.
   INDEXES = {
     "software" => {
-      :item_test => lambda { |item| item.url.include? '_software' and not item.url.include? '_docs' },
+      :item_test => lambda { |item| item.path.include? '/_software' and not item.path.include? '/docs' },
     },
     "specs" => {
-      :item_test => lambda { |item| item.url.include? '_specs' and not item.url.include? '_docs' },
+      :item_test => lambda { |item| item.path.include? '/_specs' and not item.path.include? '/docs' },
     },
   }
 
@@ -158,7 +228,6 @@ module OpenProjectHelpers
 
     def generate(site)
       if is_hub(site)
-
         INDEXES.each do |index_name, params|
           items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
 
@@ -200,15 +269,18 @@ module OpenProjectHelpers
     safe true
 
     def generate(site)
-      if is_hub(site)
 
-        INDEXES.each do |index_name, params|
+      INDEXES.each do |index_name, params|
+        if is_hub(site)
           items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
-          page = site.site_payload["site"]["pages"].detect { |p| p.url == "/#{index_name}/" }
-          page.data['items'] = items
+        else
+          items = site.collections[index_name].docs.select { |item| params[:item_test].call(item) }
         end
 
+        page = site.site_payload["site"]["pages"].detect { |p| p.url == "/#{index_name}/" }
+        page.data['items'] = items
       end
+
     end
   end
 
@@ -229,7 +301,7 @@ module OpenProjectHelpers
         # Get documents representing projects
         projects = site.collections['projects'].docs.select do |item|
           pieces = item.url.split('/')
-          pieces[3] == 'index.html' && pieces[1] == 'projects'
+          pieces.length == 4 && pieces[-1] == 'index' && pieces[1] == 'projects'
         end
         # Add project name (matches directory name, may differ from title)
         projects = projects.map do |project|
@@ -267,8 +339,6 @@ module OpenProjectHelpers
 
       blog_index = site.site_payload["site"]["pages"].detect { |page| page.url == '/blog/' }
       blog_index.data['posts_combined'] = posts_combined
-
-      site.posts_combined = posts_combined
     end
   end
 end
