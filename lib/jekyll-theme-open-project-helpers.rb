@@ -158,6 +158,10 @@ class OpenProjectReader < JekyllData::Reader
         }
       }
 
+      repo.config(
+        'core.sshCommand',
+        'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no')
+
       repo.fetch
       repo.reset_hard
       repo.checkout('origin/master', { :f => true })
