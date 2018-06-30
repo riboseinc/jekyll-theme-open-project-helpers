@@ -75,7 +75,7 @@ class OpenProjectReader < JekyllData::Reader
       did_check_out = git_sparse_checkout(
         project_path,
         project['site']['git_repo_url'],
-        ['_includes/', '_posts/', '_software/', '_specs/'])
+        ['assets/', '_posts/', '_software/', '_specs/'])
 
       if did_check_out
         CollectionDocReader.new(site).read(
