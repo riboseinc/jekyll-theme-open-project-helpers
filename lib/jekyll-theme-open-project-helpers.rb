@@ -69,7 +69,8 @@ class OpenProjectReader < JekyllData::Reader
     if is_hub(@site)
       fetch_and_read_projects
     else
-      fetch_and_read_docs
+      fetch_and_read_docs_for_items('software')
+      fetch_and_read_docs_for_items('specs')
       fetch_hub_logo
     end
   end
@@ -93,72 +94,52 @@ class OpenProjectReader < JekyllData::Reader
     project_indexes.each do |project|
       project_path = project.path.split('/')[0..-2].join('/')
 
-      did_check_out = git_sparse_checkout(
+      result = git_sparse_checkout(
         project_path,
         project['site']['git_repo_url'],
         ['assets/', '_posts/', '_software/', '_specs/'])
 
-      if did_check_out
+      if result[:newly_initialized]
         CollectionDocReader.new(site).read(
           project_path,
           @site.collections['projects'])
       end
+
+      fetch_and_read_docs_for_items('projects', 'software')
+      fetch_and_read_docs_for_items('projects', 'specs')
     end
   end
 
-  def fetch_and_read_docs
+  def fetch_docs_for_item(item_doc)
+    item_name = item_doc.id.split('/')[-1]
+    docs_path = "#{item_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
-    # Software
-    software_entry_points = @site.collections['software'].docs.select do |doc|
-      pieces = doc.id.split('/')
-      product_name = pieces[2]
-      last_piece = pieces[-1]
-
-      doc.data.key?('docs') and
-      doc.data['docs']['git_repo_url'] and
-      pieces[1] == 'software' and
-      last_piece == product_name
-    end
-    software_entry_points.each do |index_doc|
-      item_name = index_doc.id.split('/')[-1]
-      docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
-
-      did_check_out = git_sparse_checkout(
+    return {
+      :checkout_result => git_sparse_checkout(
         docs_path,
-        index_doc['docs']['git_repo_url'],
-        [index_doc['docs']['git_repo_subtree']])
+        item_doc['docs']['git_repo_url'],
+        [item_doc['docs']['git_repo_subtree']]),
+      :docs_path => docs_path,
+    }
+  end
 
-      if did_check_out
-        CollectionDocReader.new(site).read(
-          docs_path,
-          @site.collections['software'])
-      end
-    end
+  def fetch_and_read_docs_for_items(collection_name, index_collection_name=nil)
+    # collection_name would be either software, specs, or (for hub site) projects
+    # index_collection_name would be either software or specs
 
-    # Specs
-    spec_entry_points = @site.collections['specs'].docs.select do |doc|
-      pieces = doc.id.split('/')
-      product_name = pieces[2]
-      last_piece = pieces[-1]
+    index_collection_name = index_collection_name or collection_name
 
+    entry_points = @site.collections[collection_name].docs.select do |doc|
       doc.data.key?('docs') and
-      doc.data['docs']['git_repo_url'] and
-      pieces[1] == 'specs' and
-      last_piece == product_name
+      doc.data['docs']['git_repo_url']
     end
-    spec_entry_points.each do |index_doc|
-      item_name = index_doc.id.split('/')[-1]
-      docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
-
-      did_check_out = git_sparse_checkout(
-        docs_path,
-        index_doc['docs']['git_repo_url'],
-        [index_doc['docs']['git_repo_subtree']])
-
-      if did_check_out
+    entry_points.each do |index_doc|
+      result = fetch_docs_for_item(index_doc)
+      index_doc.merge_data!({ 'last_update' => result[:checkout_result][:modified_at] })
+      if result[:checkout_result][:newly_initialized]
         CollectionDocReader.new(site).read(
-          docs_path,
-          @site.collections['software'])
+          result[:docs_path],
+          @site.collections[collection_name])
       end
     end
   end
@@ -166,33 +147,43 @@ class OpenProjectReader < JekyllData::Reader
   def git_sparse_checkout(repo_path, remote_url, subtrees)
     # Returns boolean indicating whether the checkout happened
 
+    newly_initialized = false
+    repo = nil
+
     git_dir = File.join(repo_path, '.git')
     unless File.exists? git_dir
+      newly_initialized = true
+
       repo = Git.init(repo_path)
-
-      repo.add_remote('origin', remote_url)
-
-      repo.config('core.sparseCheckout', true)
-      open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
-        subtrees.each { |path|
-          f << "#{path}\n"
-        }
-      }
 
       repo.config(
         'core.sshCommand',
         'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no')
 
-      repo.fetch
-      repo.reset_hard
-      repo.checkout('origin/master', { :f => true })
+      repo.add_remote('origin', remote_url)
 
-      return true
+      repo.config('core.sparseCheckout', true)
+      open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
+        subtrees.each { |path| f << "#{path}\n" }
+      }
 
     else
-      return false
+      repo = Git.open(repo_path)
 
     end
+
+    repo.fetch
+    repo.reset_hard
+    repo.checkout('origin/master', { :f => true })
+
+    latest_commit = repo.gcommit('HEAD')
+
+    latest_commit.date
+
+    return {
+      :newly_initialized => newly_initialized,
+      :modified_at => latest_commit.date,
+    }
   end
 end
 
