@@ -59,10 +59,20 @@ class OpenProjectReader < JekyllData::Reader
       fetch_and_read_projects
     else
       fetch_and_read_docs
+      fetch_hub_logo
     end
   end
 
   private
+
+  def fetch_hub_logo
+    if @site.config.key? 'parent_hub' and @site.config['parent_hub'].key? 'git_repo_url'
+      git_sparse_checkout(
+        File.join(@site.source, 'parent-hub'),
+        @site.config['parent_hub']['git_repo_url'],
+        ['assets/', 'title.html'])
+    end
+  end
 
   def fetch_and_read_projects
     project_indexes = @site.collections['projects'].docs.select do |doc|
