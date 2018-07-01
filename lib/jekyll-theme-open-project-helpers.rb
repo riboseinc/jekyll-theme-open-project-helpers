@@ -35,6 +35,7 @@ class CollectionDocReader < Jekyll::DataReader
 
       if File.directory?(path)
         read_project_subdir(path, collection, nested=true)
+
       elsif nested or (File.basename(entry, '.*') != 'index')
         ext = File.extname(path)
         if ['.md', '.markdown', '.html'].include? ext
