@@ -27,7 +27,7 @@ class CollectionDocReader < Jekyll::DataReader
     return unless File.directory?(dir) && !@entry_filter.symlink?(dir)
 
     entries = Dir.chdir(dir) do
-      Dir["*.{md,markdown,html}"] + Dir["*"].select { |fn| File.directory?(fn) }
+      Dir["*.{md,markdown,html,svg,png}"] + Dir["*"].select { |fn| File.directory?(fn) }
     end
 
     entries.each do |entry|
@@ -36,9 +36,19 @@ class CollectionDocReader < Jekyll::DataReader
       if File.directory?(path)
         read_project_subdir(path, collection, nested=true)
       elsif nested or (File.basename(entry, '.*') != 'index')
-        doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
-        doc.read
-        collection.docs << doc
+        ext = File.extname(path)
+        if ['.md', '.markdown', '.html'].include? ext
+          doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
+          doc.read
+          collection.docs << doc
+        else
+          collection.files << Jekyll::StaticFile.new(
+            @site,
+            @site.source,
+            Pathname.new(File.dirname(path)).relative_path_from(Pathname.new(@site.source)).to_s,
+            File.basename(path),
+            collection)
+        end
       end
     end
   end
