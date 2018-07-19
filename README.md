@@ -2,5 +2,9 @@
 
 Jekyll plugin for the Open Project gem-based Jekyll theme by Ribose.
 
-Currently, its functionality includes filtered tag page generation
-for open software and specification indexes on an open hub site.
+It provides the data reading and page generation capabilities
+required by the theme.
+
+Currently it enables such features as tag-based filtering
+of open software and specification indexes, unified blog index,
+fetching open project/software/specification data from their repos.
