@@ -129,7 +129,9 @@ module Jekyll
       end
 
       def git_sparse_checkout(repo_path, remote_url, subtrees)
-        # Returns boolean indicating whether the checkout happened
+        # Returns hash with timestamp of latest repo commit
+        # and boolean signifying whether new repo has been initialized
+        # in the process of pulling the data.
 
         newly_initialized = false
         repo = nil
