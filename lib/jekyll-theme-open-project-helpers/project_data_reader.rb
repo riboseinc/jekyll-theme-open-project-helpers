@@ -111,6 +111,8 @@ module Jekyll
         # collection_name would be either software, specs, or (for hub site) projects
         # index_collection_name would be either software or specs
 
+        return unless @site.collections.key?(collection_name)
+
         index_collection_name = index_collection_name or collection_name
 
         entry_points = @site.collections[collection_name].docs.select do |doc|
