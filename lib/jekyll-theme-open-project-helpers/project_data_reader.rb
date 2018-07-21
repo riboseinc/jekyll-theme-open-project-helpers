@@ -11,7 +11,7 @@ module Jekyll
         return unless File.directory?(dir) && !@entry_filter.symlink?(dir)
 
         entries = Dir.chdir(dir) do
-          Dir["*.{md,markdown,html,svg,png}"] + Dir["*"].select { |fn| File.directory?(fn) }
+          Dir["*.{adoc,md,markdown,html,svg,png}"] + Dir["*"].select { |fn| File.directory?(fn) }
         end
 
         entries.each do |entry|
@@ -22,7 +22,7 @@ module Jekyll
 
           elsif nested or (File.basename(entry, '.*') != 'index')
             ext = File.extname(path)
-            if ['.md', '.markdown', '.html'].include? ext
+            if ['.adoc', '.md', '.markdown', '.html'].include? ext
               doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
               doc.read
               collection.docs << doc
