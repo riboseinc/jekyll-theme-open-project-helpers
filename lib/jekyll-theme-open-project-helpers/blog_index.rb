@@ -13,7 +13,7 @@ module Jekyll
       def generate(site)
         site_posts = site.posts.docs
 
-        if Jekyll::OpenProjectHelpers::is_hub(site)
+        if site.config['is_hub']
           # Get documents representing projects
           projects = site.collections['projects'].docs.select do |item|
             pieces = item.url.split('/')

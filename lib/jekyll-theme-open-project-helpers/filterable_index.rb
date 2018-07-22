@@ -43,7 +43,7 @@ module Jekyll
       safe true
 
       def generate(site)
-        if Jekyll::OpenProjectHelpers::is_hub(site)
+        if site.config['is_hub']
           INDEXES.each do |index_name, params|
             items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
 
@@ -90,7 +90,7 @@ module Jekyll
         site.config['num_featured_posts'] = 3
 
         INDEXES.each do |index_name, params|
-          if Jekyll::OpenProjectHelpers::is_hub(site)
+          if site.config['is_hub']
             collection_name = 'projects'
           else
             collection_name = index_name
