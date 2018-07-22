@@ -1,13 +1,14 @@
 module Jekyll
   module OpenProjectHelpers
 
-    # Below passes an array of posts of open hub blog
-    # and from each individual project blog, combined and sorted by date,
-    # to open hub blog index page.
     #
-    # (It also does some processing on the posts.)
-
-    class BlogIndexGenerator < Jekyll::Generator
+    # Adds a variable holding the array of posts of open hub blog
+    # and from each individual project blog, combined and sorted by date.
+    #
+    # It also does some processing on the posts
+    # as required by the Open Project theme.
+    #
+    class CombinedPostArrayGenerator < Generator
       safe true
 
       def generate(site)
@@ -53,8 +54,9 @@ module Jekyll
           post
         end
 
-        blog_index = site.site_payload["site"]["pages"].detect { |page| page.url == '/blog/' }
-        blog_index.data['posts_combined'] = posts_combined
+        # Make combined blog post array available site-wide
+        site.config['posts_combined'] = posts_combined
+        site.config['num_posts_combined'] = posts_combined.size
       end
     end
 
