@@ -50,7 +50,7 @@ module Jekyll
 
       def read
         super
-        if Jekyll::OpenProjectHelpers::is_hub(@site)
+        if @site.config['is_hub']
           fetch_and_read_projects
         else
           fetch_and_read_docs_for_items('software')
