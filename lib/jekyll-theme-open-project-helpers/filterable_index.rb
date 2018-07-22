@@ -85,18 +85,26 @@ module Jekyll
       safe true
 
       def generate(site)
+        site.config['num_featured_software'] = 3
+        site.config['num_featured_specs'] = 3
+        site.config['num_featured_posts'] = 3
 
         INDEXES.each do |index_name, params|
           if Jekyll::OpenProjectHelpers::is_hub(site)
-            items = site.collections['projects'].docs.select { |item| params[:item_test].call(item) }
+            collection_name = 'projects'
           else
-            items = site.collections[index_name].docs.select { |item| params[:item_test].call(item) }
+            collection_name = index_name
           end
 
-          page = site.site_payload["site"]["pages"].detect { |p| p.url == "/#{index_name}/" }
-          page.data['items'] = items
-        end
+          if site.collections.key? collection_name
+            # Filters items from given collection_name through item_test function
+            items = site.collections[collection_name].docs.select { |item| params[:item_test].call(item) }
 
+            # Makes items available in templates via e.g. site.all_specs, site.all_software
+            site.config["all_#{index_name}"] = items
+            site.config["num_all_#{index_name}"] = items.size
+          end
+        end
       end
     end
 
