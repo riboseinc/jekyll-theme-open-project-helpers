@@ -122,7 +122,10 @@ module Jekyll
         entry_points.each do |index_doc|
           result = fetch_docs_for_item(index_doc)
           index_doc.merge_data!({ 'last_update' => result[:checkout_result][:modified_at] })
-          if result[:checkout_result][:newly_initialized]
+
+          # Read all docs for hub site only when the repo is freshly initialized,
+          # for project sites always. A workaround for #4 pending proper solution.
+          if !@site.config['is_hub'] or result[:newly_initialized]
             CollectionDocReader.new(site).read(
               result[:docs_path],
               @site.collections[collection_name])
