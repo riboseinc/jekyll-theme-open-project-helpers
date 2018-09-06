@@ -1,3 +1,5 @@
+require 'fileutils'
+
 module Jekyll
   module OpenProjectHelpers
 
@@ -154,6 +156,8 @@ module Jekyll
           repo.add_remote('origin', remote_url)
 
           repo.config('core.sparseCheckout', true)
+
+          FileUtils.mkdir_p File.join(git_dir, 'info')
           open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
             subtrees.each { |path| f << "#{path}\n" }
           }
