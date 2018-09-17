@@ -111,7 +111,7 @@ module Jekyll
 
       def fetch_and_read_docs_for_items(collection_name, index_collection_name=nil)
         # collection_name would be either software, specs, or (for hub site) projects
-        # index_collection_name would be either software or specs
+        # index_collection_name would be either software, specs or (for project site) nil
 
         return unless @site.collections.key?(collection_name)
 
