@@ -3,6 +3,8 @@ require 'fileutils'
 module Jekyll
   module OpenProjectHelpers
 
+    DEFAULT_DOCS_SUBTREE = 'docs'
+
     class CollectionDocReader < Jekyll::DataReader
 
       def read(dir, collection)
@@ -96,19 +98,6 @@ module Jekyll
         end
       end
 
-      def fetch_docs_for_item(item_doc)
-        item_name = item_doc.id.split('/')[-1]
-        docs_path = "#{item_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
-
-        return {
-          :checkout_result => git_sparse_checkout(
-            docs_path,
-            item_doc['docs']['git_repo_url'],
-            [item_doc['docs']['git_repo_subtree']]),
-          :docs_path => docs_path,
-        }
-      end
-
       def fetch_and_read_docs_for_items(collection_name, index_collection_name=nil)
         # collection_name would be either software, specs, or (for hub site) projects
         # index_collection_name would be either software, specs or (for project site) nil
@@ -118,24 +107,52 @@ module Jekyll
         index_collection_name = index_collection_name or collection_name
 
         entry_points = @site.collections[collection_name].docs.select do |doc|
-          doc.data.key?('docs') and
-          doc.data['docs']['git_repo_url']
+          doc.data['repo_url']
         end
-        entry_points.each do |index_doc|
-          result = fetch_docs_for_item(index_doc)
-          index_doc.merge_data!({ 'last_update' => result[:checkout_result][:modified_at] })
 
-          # Read all docs for hub site only when the repo is freshly initialized,
-          # for project sites always. A workaround for #4 pending proper solution.
-          if !@site.config['is_hub'] or result[:newly_initialized]
-            CollectionDocReader.new(site).read(
-              result[:docs_path],
-              @site.collections[collection_name])
+        entry_points.each do |index_doc|
+          item_name = index_doc.id.split('/')[-1]
+
+          if index_doc.data.key?('docs') and index_doc.data['docs']['git_repo_url']
+            docs_repo = index_doc.data['docs']['git_repo_url']
+            docs_subtree = index_doc.data['docs']['git_repo_subtree'] || DEFAULT_DOCS_SUBTREE
+          else
+            docs_repo = index_doc.data['repo_url']
+            docs_subtree = DEFAULT_DOCS_SUBTREE
+          end
+
+          docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
+
+          begin
+            docs_checkout = git_sparse_checkout(docs_path, docs_repo, [docs_subtree])
+
+            # Read all docs for hub site only when the repo is freshly initialized,
+            # for project sites always. A workaround for #4 pending proper solution.
+            if !@site.config['is_hub'] or docs_checkout[:newly_initialized]
+              CollectionDocReader.new(site).read(
+                docs_checkout[:docs_path],
+                @site.collections[collection_name])
+            end
+
+          rescue
+            docs_checkout = nil
+
+          end
+
+          # Get last repository modification timestamp.
+          # Fetch the repository for that purpose,
+          # unless it’s the same as the repo where docs are.
+          if docs_checkout == nil or docs_repo != index_doc.data['repo_url']
+            repo_path = "#{index_doc.path.split('/')[0..-2].join('/')}/_#{item_name}_repo"
+            repo_checkout = git_sparse_checkout(repo_path, index_doc.data['repo_url'])
+            index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
+          else
+            index_doc.merge_data!({ 'last_update' => docs_checkout[:modified_at] })
           end
         end
       end
 
-      def git_sparse_checkout(repo_path, remote_url, subtrees)
+      def git_sparse_checkout(repo_path, remote_url, sparse_subtrees=[])
         # Returns hash with timestamp of latest repo commit
         # and boolean signifying whether new repo has been initialized
         # in the process of pulling the data.
@@ -155,12 +172,14 @@ module Jekyll
 
           repo.add_remote('origin', remote_url)
 
-          repo.config('core.sparseCheckout', true)
+          if sparse_subtrees.size > 0
+            repo.config('core.sparseCheckout', true)
 
-          FileUtils.mkdir_p File.join(git_dir, 'info')
-          open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
-            subtrees.each { |path| f << "#{path}\n" }
-          }
+            FileUtils.mkdir_p File.join(git_dir, 'info')
+            open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
+              subtrees.each { |path| f << "#{path}\n" }
+            }
+          end
 
         else
           repo = Git.open(repo_path)
