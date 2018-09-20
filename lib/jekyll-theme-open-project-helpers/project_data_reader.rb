@@ -67,7 +67,7 @@ module Jekyll
 
       def fetch_hub_logo
         if @site.config.key? 'parent_hub' and @site.config['parent_hub'].key? 'git_repo_url'
-          git_sparse_checkout(
+          git_shallow_checkout(
             File.join(@site.source, 'parent-hub'),
             @site.config['parent_hub']['git_repo_url'],
             ['assets/', 'title.html'])
@@ -82,7 +82,7 @@ module Jekyll
         project_indexes.each do |project|
           project_path = project.path.split('/')[0..-2].join('/')
 
-          result = git_sparse_checkout(
+          result = git_shallow_checkout(
             project_path,
             project['site']['git_repo_url'],
             ['assets/', '_posts/', '_software/', '_specs/'])
@@ -124,7 +124,7 @@ module Jekyll
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
           begin
-            docs_checkout = git_sparse_checkout(docs_path, docs_repo, [docs_subtree])
+            docs_checkout = git_shallow_checkout(docs_path, docs_repo, [docs_subtree])
 
             # Read all docs for hub site only when the repo is freshly initialized,
             # for project sites always. A workaround for #4 pending proper solution.
@@ -144,7 +144,7 @@ module Jekyll
           # unless it’s the same as the repo where docs are.
           if docs_checkout == nil or docs_repo != index_doc.data['repo_url']
             repo_path = "#{index_doc.path.split('/')[0..-2].join('/')}/_#{item_name}_repo"
-            repo_checkout = git_sparse_checkout(repo_path, index_doc.data['repo_url'])
+            repo_checkout = git_shallow_checkout(repo_path, index_doc.data['repo_url'])
             index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
           else
             index_doc.merge_data!({ 'last_update' => docs_checkout[:modified_at] })
@@ -152,7 +152,7 @@ module Jekyll
         end
       end
 
-      def git_sparse_checkout(repo_path, remote_url, sparse_subtrees=[])
+      def git_shallow_checkout(repo_path, remote_url, sparse_subtrees=[])
         # Returns hash with timestamp of latest repo commit
         # and boolean signifying whether new repo has been initialized
         # in the process of pulling the data.
@@ -186,7 +186,7 @@ module Jekyll
 
         end
 
-        repo.fetch
+        repo.fetch('origin', { :depth => 1 })
         repo.reset_hard
         repo.checkout('origin/master', { :f => true })
 
