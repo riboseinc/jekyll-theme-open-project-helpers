@@ -177,7 +177,7 @@ module Jekyll
 
             FileUtils.mkdir_p File.join(git_dir, 'info')
             open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
-              subtrees.each { |path| f << "#{path}\n" }
+              sparse_subtrees.each { |path| f << "#{path}\n" }
             }
           end
 
