@@ -70,7 +70,7 @@ module Jekyll
           git_shallow_checkout(
             File.join(@site.source, 'parent-hub'),
             @site.config['parent_hub']['git_repo_url'],
-            ['assets/', 'title.html'])
+            ['assets', 'title.html'])
         end
       end
 
@@ -85,7 +85,7 @@ module Jekyll
           result = git_shallow_checkout(
             project_path,
             project['site']['git_repo_url'],
-            ['assets/', '_posts/', '_software/', '_specs/'])
+            ['assets', '_posts', '_software', '_specs'])
 
           if result[:newly_initialized]
             CollectionDocReader.new(site).read(
