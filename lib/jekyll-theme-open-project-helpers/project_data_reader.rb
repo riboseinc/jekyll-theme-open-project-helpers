@@ -126,13 +126,9 @@ module Jekyll
           begin
             docs_checkout = git_shallow_checkout(docs_path, docs_repo, [docs_subtree])
 
-            # Read all docs for hub site only when the repo is freshly initialized,
-            # for project sites always. A workaround for #4 pending proper solution.
-            if !@site.config['is_hub'] or docs_checkout[:newly_initialized]
-              CollectionDocReader.new(site).read(
-                docs_checkout[:docs_path],
-                @site.collections[collection_name])
-            end
+            CollectionDocReader.new(site).read(
+              docs_checkout[:docs_path],
+              @site.collections[collection_name])
 
           rescue
             docs_checkout = nil
