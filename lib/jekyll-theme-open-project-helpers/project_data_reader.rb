@@ -5,6 +5,12 @@ module Jekyll
 
     DEFAULT_DOCS_SUBTREE = 'docs'
 
+    class NonLiquidDocument < Jekyll::Document
+      def render_with_liquid?
+        return false
+      end
+    end
+
     class CollectionDocReader < Jekyll::DataReader
 
       def read(dir, collection)
@@ -27,7 +33,7 @@ module Jekyll
           elsif nested or (File.basename(entry, '.*') != 'index')
             ext = File.extname(path)
             if ['.adoc', '.md', '.markdown', '.html'].include? ext
-              doc = Jekyll::Document.new(path, :site => @site, :collection => collection)
+              doc = NonLiquidDocument.new(path, :site => @site, :collection => collection)
               doc.read
               collection.docs << doc
             else
