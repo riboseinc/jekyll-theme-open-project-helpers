@@ -197,9 +197,8 @@ module Jekyll
         repo.reset_hard
         repo.checkout('#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}', { :f => true })
 
-        latest_commit = repo.gcommit('HEAD')
 
-        latest_commit.date
+        latest_commit = repo.gcommit('HEAD')
 
         return {
           :newly_initialized => newly_initialized,
