@@ -166,6 +166,8 @@ module Jekyll
         repo = nil
 
         git_dir = File.join(repo_path, '.git')
+        git_info_dir = File.join(git_dir, 'info')
+        git_sparse_checkout_file = File.join(git_dir, 'info', 'sparse-checkout')
         unless File.exists? git_dir
           newly_initialized = true
 
@@ -180,8 +182,8 @@ module Jekyll
           if sparse_subtrees.size > 0
             repo.config('core.sparseCheckout', true)
 
-            FileUtils.mkdir_p File.join(git_dir, 'info')
-            open(File.join(git_dir, 'info', 'sparse-checkout'), 'a') { |f|
+            FileUtils.mkdir_p git_info_dir
+            open(git_sparse_checkout_file, 'a') { |f|
               sparse_subtrees.each { |path| f << "#{path}\n" }
             }
           end
