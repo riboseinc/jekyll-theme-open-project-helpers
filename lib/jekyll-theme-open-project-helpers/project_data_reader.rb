@@ -5,6 +5,9 @@ module Jekyll
 
     DEFAULT_DOCS_SUBTREE = 'docs'
 
+    DEFAULT_REPO_REMOTE_NAME = 'origin'
+    DEFAULT_REPO_BRANCH = 'master'
+
     class NonLiquidDocument < Jekyll::Document
       def render_with_liquid?
         return false
@@ -172,7 +175,7 @@ module Jekyll
             'core.sshCommand',
             'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no')
 
-          repo.add_remote('origin', remote_url)
+          repo.add_remote(DEFAULT_REPO_REMOTE_NAME, remote_url)
 
           if sparse_subtrees.size > 0
             repo.config('core.sparseCheckout', true)
@@ -188,9 +191,9 @@ module Jekyll
 
         end
 
-        repo.fetch('origin', { :depth => 1 })
+        repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
         repo.reset_hard
-        repo.checkout('origin/master', { :f => true })
+        repo.checkout('#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}', { :f => true })
 
         latest_commit = repo.gcommit('HEAD')
 
