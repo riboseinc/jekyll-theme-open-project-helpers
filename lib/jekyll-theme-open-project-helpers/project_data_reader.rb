@@ -61,6 +61,7 @@ module Jekyll
 
     class OpenProjectReader < JekyllData::Reader
 
+      # TODO: Switch to @site.config?
       @@siteconfig = Jekyll.configuration({})
 
       def read
