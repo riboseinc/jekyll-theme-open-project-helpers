@@ -61,6 +61,8 @@ module Jekyll
 
     class OpenProjectReader < JekyllData::Reader
 
+      @@siteconfig = Jekyll.configuration({})
+
       def read
         super
         if @site.config['is_hub']
@@ -193,14 +195,45 @@ module Jekyll
 
         end
 
-        repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
-        repo.reset_hard
-        repo.checkout('#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}', { :f => true })
+        refresh_condition = @@siteconfig['refresh_remote_data'] || 'last-resort'
 
+        unless ['always', 'last-resort', 'skip'].include?(refresh_condition)
+          raise RuntimeError.new('Invalid refresh_remote_data value in site’s _config.yml!')
+        end
+
+        if refresh_condition == 'always'
+          repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
+          repo.reset_hard
+          repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+
+        else
+          begin
+            repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+          rescue Exception => e
+            if e.message.include? "Sparse checkout leaves no entry on working directory"
+              # Supposedly, software docs are missing! No big deal.
+              return {
+                :success => false,
+                :newly_initialized => nil,
+                :modified_at => nil,
+              }
+            elsif refresh_condition == 'last-resort'
+              repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
+              repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+            else
+              return {
+                :success => false,
+                :newly_initialized => nil,
+                :modified_at => nil,
+              }
+            end
+          end
+        end
 
         latest_commit = repo.gcommit('HEAD')
 
         return {
+          :success => true,
           :newly_initialized => newly_initialized,
           :modified_at => latest_commit.date,
         }
