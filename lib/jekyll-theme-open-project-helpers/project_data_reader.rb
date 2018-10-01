@@ -207,7 +207,7 @@ module Jekyll
           repo.reset_hard
           repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
 
-        else
+        elsif refresh_condition == 'last-resort'
           begin
             repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
           rescue Exception => e
@@ -218,15 +218,9 @@ module Jekyll
                 :newly_initialized => nil,
                 :modified_at => nil,
               }
-            elsif refresh_condition == 'last-resort'
+            else
               repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
               repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
-            else
-              return {
-                :success => false,
-                :newly_initialized => nil,
-                :modified_at => nil,
-              }
             end
           end
         end
