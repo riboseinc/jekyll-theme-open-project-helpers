@@ -137,14 +137,14 @@ module Jekyll
 
           begin
             docs_checkout = git_shallow_checkout(docs_path, docs_repo, [docs_subtree])
-
-            CollectionDocReader.new(site).read(
-              docs_checkout[:docs_path],
-              @site.collections[collection_name])
-
           rescue
-            docs_checkout = nil
+            docs_checkout = nil 
+          end
 
+          if docs_checkout
+            CollectionDocReader.new(site).read(
+              docs_path,
+              @site.collections[collection_name])
           end
 
           # Get last repository modification timestamp.
