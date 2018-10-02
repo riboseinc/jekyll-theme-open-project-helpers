@@ -94,16 +94,10 @@ module Jekyll
         project_indexes.each do |project|
           project_path = project.path.split('/')[0..-2].join('/')
 
-          result = git_shallow_checkout(
+          git_shallow_checkout(
             project_path,
             project['site']['git_repo_url'],
             ['assets', '_posts', '_software', '_specs'])
-
-          if result[:newly_initialized]
-            CollectionDocReader.new(site).read(
-              project_path,
-              @site.collections['projects'])
-          end
 
           fetch_and_read_docs_for_items('projects', 'software')
           fetch_and_read_docs_for_items('projects', 'specs')
