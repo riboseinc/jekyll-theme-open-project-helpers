@@ -104,11 +104,11 @@ module Jekyll
             site.config["all_#{index_name}"] = items
             site.config["num_all_#{index_name}"] = items.size
 
-            featured_items = items.select { |item| item.data[:feature_with_priority] != nil }
+            featured_items = items.select { |item| item.data['feature_with_priority'] != nil }
             site.config["featured_#{index_name}"] = featured_items
             site.config["num_featured_#{index_name}"] = featured_items.size
 
-            non_featured_items = items.select { |item| item.data[:feature_with_priority] == nil }
+            non_featured_items = items.select { |item| item.data['feature_with_priority'] == nil }
             site.config["non_featured_#{index_name}"] = non_featured_items
             site.config["num_non_featured_#{index_name}"] = non_featured_items.size
           end
