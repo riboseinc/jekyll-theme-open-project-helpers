@@ -85,9 +85,9 @@ module Jekyll
       safe true
 
       def generate(site)
-        site.config['num_featured_software'] = 3
-        site.config['num_featured_specs'] = 3
-        site.config['num_featured_posts'] = 3
+        site.config['max_featured_software'] = 3
+        site.config['max_featured_specs'] = 3
+        site.config['max_featured_posts'] = 3
 
         INDEXES.each do |index_name, params|
           if site.config['is_hub']
