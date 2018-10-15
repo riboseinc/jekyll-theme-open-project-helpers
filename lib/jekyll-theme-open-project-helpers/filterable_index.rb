@@ -101,6 +101,19 @@ module Jekyll
             # and makes items available in templates via e.g. site.all_specs, site.all_software
 
             items = site.collections[collection_name].docs.select { |item| params[:item_test].call(item) }
+
+            if site.config['is_hub']
+              items.map! do |item|
+                project_name = item.url.split('/')[2]
+                project_path = "_projects/#{project_name}/index.md"
+
+                item.data[:project_name] = project_name
+                item.data[:project_data] = site.collections['projects'].docs.select { |proj| proj.path.end_with? project_path } [0]
+
+                item
+              end
+            end
+
             site.config["all_#{index_name}"] = items
             site.config["num_all_#{index_name}"] = items.size
 
