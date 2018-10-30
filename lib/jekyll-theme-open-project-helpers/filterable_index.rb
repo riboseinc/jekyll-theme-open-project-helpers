@@ -137,8 +137,8 @@ def get_all_items(site, collection_name, filter_func)
       project_name = item.url.split('/')[2]
       project_path = "_projects/#{project_name}/index.md"
 
-      item.data[:project_name] = project_name
-      item.data[:project_data] = site.collections['projects'].docs.select {
+      item.data['project_name'] = project_name
+      item.data['project_data'] = site.collections['projects'].docs.select {
         |proj| proj.path.end_with? project_path
       } [0]
 
