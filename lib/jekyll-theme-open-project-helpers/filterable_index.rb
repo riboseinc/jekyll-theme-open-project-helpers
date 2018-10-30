@@ -128,6 +128,10 @@ def get_all_items(site, collection_name, filter_func)
     filter_func.call(item)
   }
 
+  items.sort! { |i1, i2|
+    (i2.data['last_update'] <=> i1.data['last_update']) || 0
+  }
+
   if site.config['is_hub']
     items.map! do |item|
       project_name = item.url.split('/')[2]
