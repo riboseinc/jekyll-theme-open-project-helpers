@@ -128,8 +128,12 @@ def get_all_items(site, collection_name, filter_func)
     filter_func.call(item)
   }
 
+  default_time = Time.new(1989, 12, 31, 0, 0, 0, "+00:00")
+
   items.sort! { |i1, i2|
-    (i2.data['last_update'] <=> i1.data['last_update']) || 0
+    val1 = i1.data.fetch('last_update', default_time) || default_time
+    val2 = i2.data.fetch('last_update', default_time) || default_time
+    (val2 <=> val1) || 0
   }
 
   if site.config['is_hub']
