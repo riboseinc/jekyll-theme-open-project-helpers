@@ -43,36 +43,39 @@ module Jekyll
       safe true
 
       def generate(site)
-        if site.config['is_hub']
-          INDEXES.each do |index_name, params|
-            items = get_all_items(site, 'projects', params[:item_test])
+        INDEXES.each do |index_name, params|
+          if site.config['is_hub']
+            collection_name = 'projects'
+          else
+            collection_name = index_name
+          end
 
-            # Creates a data structure like { tag1: [item1, item2], tag2: [item2, item3] }
-            tags = {}
-            items.each do |item|
-              item.data['tags'].each do |tag|
-                unless tags.key? tag
-                  tags[tag] = []
-                end
-                tags[tag].push(item)
+          items = get_all_items(site, collection_name, params[:item_test])
+
+          # Creates a data structure like { tag1: [item1, item2], tag2: [item2, item3] }
+          tags = {}
+          items.each do |item|
+            item.data['tags'].each do |tag|
+              unless tags.key? tag
+                tags[tag] = []
               end
-            end
-
-            # Creates a filtered index page for each tag
-            tags.each do |tag, tagged_items|
-              site.pages << FilteredIndexPage.new(
-                site,
-                site.source,
-
-                # The filtered page will be nested under /<index page>/<tag>.html
-                File.join(index_name, tag),
-
-                tag,
-                tagged_items,
-                index_name)
+              tags[tag].push(item)
             end
           end
 
+          # Creates a filtered index page for each tag
+          tags.each do |tag, tagged_items|
+            site.pages << FilteredIndexPage.new(
+              site,
+              site.source,
+
+              # The filtered page will be nested under /<index page>/<tag>.html
+              File.join(index_name, tag),
+
+              tag,
+              tagged_items,
+              index_name)
+          end
         end
       end
     end
