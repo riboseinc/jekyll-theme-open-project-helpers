@@ -3,7 +3,7 @@ require 'uri'
 
 def process_content(site_hostname, content)
   content = Nokogiri::HTML(content)
-  content.css('main a').each do |a|
+  content.css('body.site--project main a, body.site--hub.layout--post main a').each do |a|
     next unless a.get_attribute('href') =~ /\Ahttp/i
     next if a.get_attribute('href').include? site_hostname
     a.set_attribute('rel', 'external')
