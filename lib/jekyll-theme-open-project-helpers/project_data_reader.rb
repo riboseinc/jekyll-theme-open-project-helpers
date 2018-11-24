@@ -99,8 +99,7 @@ module Jekyll
             project['site']['git_repo_url'],
             ['assets', '_posts', '_software', '_specs'])
 
-          fetch_and_read_docs_for_items('projects', 'software')
-          fetch_and_read_docs_for_items('projects', 'specs')
+          fetch_and_read_docs_for_items('projects')
         end
       end
 
@@ -119,22 +118,24 @@ module Jekyll
           item_name = index_doc.id.split('/')[-1]
 
           if index_doc.data.key?('docs') and index_doc.data['docs']['git_repo_url']
-            docs_repo = index_doc.data['docs']['git_repo_url']
-            docs_subtree = index_doc.data['docs']['git_repo_subtree'] || DEFAULT_DOCS_SUBTREE
+            sw_docs_repo = index_doc.data['docs']['git_repo_url']
+            sw_docs_subtree = index_doc.data['docs']['git_repo_subtree'] || DEFAULT_DOCS_SUBTREE
           else
-            docs_repo = index_doc.data['repo_url']
-            docs_subtree = DEFAULT_DOCS_SUBTREE
+            sw_docs_repo = index_doc.data['repo_url']
+            sw_docs_subtree = DEFAULT_DOCS_SUBTREE
           end
+
+          main_repo = index_doc.data['repo_url']
 
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
           begin
-            docs_checkout = git_shallow_checkout(docs_path, docs_repo, [docs_subtree])
+            sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree])
           rescue
-            docs_checkout = nil 
+            sw_docs_checkout = nil 
           end
 
-          if docs_checkout
+          if sw_docs_checkout
             CollectionDocReader.new(site).read(
               docs_path,
               @site.collections[collection_name])
@@ -143,12 +144,12 @@ module Jekyll
           # Get last repository modification timestamp.
           # Fetch the repository for that purpose,
           # unless it’s the same as the repo where docs are.
-          if docs_checkout == nil or docs_repo != index_doc.data['repo_url']
+          if sw_docs_checkout == nil or sw_docs_repo != main_repo
             repo_path = "#{index_doc.path.split('/')[0..-2].join('/')}/_#{item_name}_repo"
-            repo_checkout = git_shallow_checkout(repo_path, index_doc.data['repo_url'])
+            repo_checkout = git_shallow_checkout(repo_path, main_repo)
             index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
           else
-            index_doc.merge_data!({ 'last_update' => docs_checkout[:modified_at] })
+            index_doc.merge_data!({ 'last_update' => sw_docs_checkout[:modified_at] })
           end
         end
       end
