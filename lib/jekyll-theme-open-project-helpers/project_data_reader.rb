@@ -104,13 +104,12 @@ module Jekyll
         end
       end
 
-      def fetch_and_read_docs_for_items(collection_name, index_collection_name=nil)
+      def fetch_and_read_docs_for_items(collection_name)
+        # In this context, “docs” means Jekyll documents. For software it would be
+        # documentation, and for specs it would be spec contents.
         # collection_name would be either software, specs, or (for hub site) projects
-        # index_collection_name would be either software, specs or (for project site) nil
 
         return unless @site.collections.key?(collection_name)
-
-        index_collection_name = index_collection_name or collection_name
 
         entry_points = @site.collections[collection_name].docs.select do |doc|
           doc.data['repo_url']
