@@ -8,6 +8,7 @@ require 'jekyll-theme-open-project-helpers/project_data_reader'
 require 'jekyll-theme-open-project-helpers/filterable_index'
 require 'jekyll-theme-open-project-helpers/blog_index'
 require 'jekyll-theme-open-project-helpers/external_links'
+require 'jekyll-theme-open-project-helpers/spec_builders/spec_builder'
 
 
 module Jekyll

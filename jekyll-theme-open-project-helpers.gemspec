@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'jekyll', '~> 3.8'
   s.add_runtime_dependency 'git', '~> 1.4'
+  s.add_runtime_dependency 'fastimage', '~> 2.1.4'
   s.add_development_dependency 'rake', '~> 12.0'
   s.add_development_dependency 'rubocop', '~> 0.50'
 

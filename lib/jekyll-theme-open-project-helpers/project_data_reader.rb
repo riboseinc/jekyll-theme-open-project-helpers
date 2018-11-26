@@ -69,8 +69,8 @@ module Jekyll
         if @site.config['is_hub']
           fetch_and_read_projects
         else
-          fetch_and_read_docs_for_items('software')
-          fetch_and_read_docs_for_items('specs')
+          fetch_and_read_software('software')
+          fetch_and_read_specs('specs')
           fetch_hub_logo
         end
       end
@@ -99,14 +99,74 @@ module Jekyll
             project['site']['git_repo_url'],
             ['assets', '_posts', '_software', '_specs'])
 
-          fetch_and_read_docs_for_items('projects')
+          fetch_and_read_software('projects')
+          fetch_and_read_specs('projects')
         end
       end
 
-      def fetch_and_read_docs_for_items(collection_name)
-        # In this context, “docs” means Jekyll documents. For software it would be
-        # documentation, and for specs it would be spec contents.
-        # collection_name would be either software, specs, or (for hub site) projects
+      def build_and_read_spec_pages(collection_name, index_doc)
+        item_name = index_doc.id.split('/')[-1]
+
+        repo_checkout = nil
+        src = index_doc.data['spec_source']
+        repo_url = src['git_repo_url']
+        repo_subtree = src['git_repo_subtree']
+        build = src['build']
+        engine = build['engine']
+        engine_opts = build['options'] || {}
+
+        spec_checkout_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
+        spec_root = if repo_subtree
+                      "#{spec_checkout_path}/#{repo_subtree}"
+                    else
+                      spec_checkout_path
+                    end
+
+        begin
+          repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree])
+        rescue
+          repo_checkout = nil
+        end
+
+        if repo_checkout
+          builder = Jekyll::OpenProjectHelpers::SpecBuilder::new(
+            @site,
+            index_doc,
+            spec_root,
+            "specs/#{item_name}",
+            engine,
+            engine_opts)
+
+          builder.build()
+          builder.built_pages.each do |page|
+            @site.pages << page
+          end
+
+          CollectionDocReader.new(site).read(
+            spec_checkout_path,
+            @site.collections[collection_name])
+
+          index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
+        end
+      end
+
+      def fetch_and_read_specs(collection_name)
+        # collection_name would be either specs or (for hub site) projects
+
+        return unless @site.collections.key?(collection_name)
+
+        # Get spec entry points
+        entry_points = @site.collections[collection_name].docs.select do |doc|
+          doc.data['spec_source']
+        end
+
+        entry_points.each do |index_doc|
+          build_and_read_spec_pages(collection_name, index_doc)
+        end
+      end
+
+      def fetch_and_read_software(collection_name)
+        # collection_name would be either software or (for hub site) projects
 
         return unless @site.collections.key?(collection_name)
 
