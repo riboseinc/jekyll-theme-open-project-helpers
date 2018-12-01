@@ -40,7 +40,7 @@ module Builder
 
       nav_item = spec_info.data['navigation']['sections'].map { |section|
         section['items']
-      } .flatten.select { |item| item['path'] == png_name_noext} [0].clone
+      } .flatten.select { |item| item['path'] == png_name_noext } [0].clone
 
       png_dimensions = FastImage.size(pngfile)
       data = spec_info.data.clone
