@@ -50,6 +50,7 @@ module Builder
       data = data.merge(nav_item)
 
       data['title'] = "#{spec_info['title']}: #{nav_item['title']}"
+      data['article_header_title'] = "#{nav_item['title']}"
 
       page = PngDiagramPage.new(
         site,
