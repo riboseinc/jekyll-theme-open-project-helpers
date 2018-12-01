@@ -47,6 +47,11 @@ module Builder
       data['image_path'] = "/#{spec_root}/images/#{png_name}"
       data['image_width'] = png_dimensions[0]
       data['image_height'] = png_dimensions[1]
+
+      if nav_item == nil
+        raise "Navigation item matching #{png_name} (#{spec_root}) was not found"
+      end
+
       data = data.merge(nav_item)
 
       data['title'] = "#{spec_info['title']}: #{nav_item['title']}"
