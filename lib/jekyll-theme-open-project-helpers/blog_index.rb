@@ -36,7 +36,7 @@ module Jekyll
             post
           end
 
-          posts_combined = (project_posts + site_posts).sort_by(&:date).reverse
+          posts_combined = (project_posts + site_posts)
 
         else
           posts_combined = site_posts
@@ -45,7 +45,7 @@ module Jekyll
 
         # On each post, replace authors’ emails with corresponding md5 hashes
         # suitable for hotlinking authors’ Gravatar profile pictures.
-        posts_combined = posts_combined.map do |post|
+        posts_combined = posts_combined.sort_by(&:date).reverse.map do |post|
           if post.data.key? 'author'
             email = post.data['author']['email']
             hash = Digest::MD5.hexdigest(email)
