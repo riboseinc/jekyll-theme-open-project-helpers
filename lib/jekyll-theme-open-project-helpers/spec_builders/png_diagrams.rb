@@ -38,9 +38,9 @@ module Builder
       png_name = File.basename(pngfile)
       png_name_noext = File.basename(png_name, File.extname(png_name))
 
-      nav_item = spec_info.data['navigation']['sections'].map { |section|
-        section['items']
-      } .flatten.select { |item| item['path'] == png_name_noext } [0].clone
+      nav_item = spec_info.data['navigation']['items'].map { |top_level_item|
+        top_level_item['items']
+      } .flatten.select { |item| item['path'].start_with?(png_name_noext) } [0].clone
 
       png_dimensions = FastImage.size(pngfile)
       data = spec_info.data.clone
