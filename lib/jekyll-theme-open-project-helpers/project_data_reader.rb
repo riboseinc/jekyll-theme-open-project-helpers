@@ -70,7 +70,7 @@ module Jekyll
           fetch_and_read_projects
         else
           fetch_and_read_software('software')
-          fetch_and_read_specs('specs')
+          fetch_and_read_specs('specs', true)
           fetch_hub_logo
         end
       end
@@ -104,7 +104,7 @@ module Jekyll
         end
       end
 
-      def build_and_read_spec_pages(collection_name, index_doc)
+      def build_and_read_spec_pages(collection_name, index_doc, build_pages=false)
         item_name = index_doc.id.split('/')[-1]
 
         repo_checkout = nil
@@ -129,28 +129,30 @@ module Jekyll
         end
 
         if repo_checkout
-          builder = Jekyll::OpenProjectHelpers::SpecBuilder::new(
-            @site,
-            index_doc,
-            spec_root,
-            "specs/#{item_name}",
-            engine,
-            engine_opts)
+          if build_pages
+            builder = Jekyll::OpenProjectHelpers::SpecBuilder::new(
+              @site,
+              index_doc,
+              spec_root,
+              "specs/#{item_name}",
+              engine,
+              engine_opts)
 
-          builder.build()
-          builder.built_pages.each do |page|
-            @site.pages << page
+            builder.build()
+            builder.built_pages.each do |page|
+              @site.pages << page
+            end
+
+            CollectionDocReader.new(site).read(
+              spec_checkout_path,
+              @site.collections[collection_name])
           end
-
-          CollectionDocReader.new(site).read(
-            spec_checkout_path,
-            @site.collections[collection_name])
 
           index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
         end
       end
 
-      def fetch_and_read_specs(collection_name)
+      def fetch_and_read_specs(collection_name, build_pages=false)
         # collection_name would be either specs or (for hub site) projects
 
         return unless @site.collections.key?(collection_name)
@@ -161,7 +163,7 @@ module Jekyll
         end
 
         entry_points.each do |index_doc|
-          build_and_read_spec_pages(collection_name, index_doc)
+          build_and_read_spec_pages(collection_name, index_doc, build_pages)
         end
       end
 
