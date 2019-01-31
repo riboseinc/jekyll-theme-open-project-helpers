@@ -50,6 +50,7 @@ module Jekyll
             email = post.data['author']['email']
             hash = Digest::MD5.hexdigest(email)
             post.data['author']['email'] = hash
+            post.data['author']['plaintext_email'] = email
           end
           post
         end
