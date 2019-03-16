@@ -105,6 +105,10 @@ module Jekyll
 
             items = get_all_items(site, collection_name, params[:item_test])
 
+            if items.length == 1
+              site.config["one_#{index_name}"] = items[0]
+            end
+
             site.config["all_#{index_name}"] = items
             site.config["num_all_#{index_name}"] = items.size
 
