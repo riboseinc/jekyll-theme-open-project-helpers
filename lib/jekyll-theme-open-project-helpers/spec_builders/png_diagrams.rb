@@ -1,5 +1,23 @@
 require 'fastimage'
 
+# Recursively go through given list of nav_items, including any nested items,
+# and return a flat array containing navigation items with path specified.
+def get_nav_items_with_path(nav_items)
+  items_with_path = []
+
+  for item in nav_items do
+    if item['path']
+      items_with_path.push(item)
+    end
+
+    if item['items']
+      items_with_path.concat(get_nav_items_with_path(item['items']))
+    end
+  end
+
+  return items_with_path
+end
+
 module Builder
 
   class PngDiagramPage < Jekyll::Page
@@ -34,13 +52,15 @@ module Builder
     stub_path = "#{File.dirname(__FILE__)}/png_diagram.html"
     pages = []
 
+    diagram_nav_items = get_nav_items_with_path(spec_info.data['navigation']['items'])
+
     Dir.glob("#{images_path}/*.png") do |pngfile|
       png_name = File.basename(pngfile)
       png_name_noext = File.basename(png_name, File.extname(png_name))
 
-      nav_item = spec_info.data['navigation']['items'].map { |top_level_item|
-        top_level_item['items']
-      } .flatten.select { |item| item['path'].start_with?(png_name_noext) } [0].clone
+      nav_item = diagram_nav_items.select { |item|
+        item['path'].start_with?(png_name_noext)
+      } [0].clone
 
       png_dimensions = FastImage.size(pngfile)
       data = spec_info.data.clone
