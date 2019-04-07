@@ -15,7 +15,7 @@ def process_content(site_hostname, content, exclude_selectors=[])
     next if a.get_attribute('href').include? site_hostname
     next if matches_one_of(a, exclude_selectors)
     a.set_attribute('rel', 'external')
-    a.inner_html = "#{a.inner_html}<span class='ico-ext'><i class='fas fa-external-link-square'></i></span>"
+    a.inner_html = "#{a.inner_html}<span class='ico-ext'><i class='fas fa-external-link-square-alt'></i></span>"
   end
   return content.to_s
 end
