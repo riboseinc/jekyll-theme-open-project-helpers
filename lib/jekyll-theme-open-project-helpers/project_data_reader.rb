@@ -99,6 +99,10 @@ module Jekyll
             project['site']['git_repo_url'],
             ['assets', '_posts', '_software', '_specs'])
 
+          CollectionDocReader.new(site).read(
+            project_path,
+            @site.collections['projects'])
+
           fetch_and_read_software('projects')
           fetch_and_read_specs('projects')
         end
