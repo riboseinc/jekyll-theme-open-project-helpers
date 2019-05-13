@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name          = 'jekyll-theme-open-project-helpers'
-  s.version       = '2.0.9'
+  s.version       = '2.0.10'
   s.authors       = ['Ribose Inc.']
   s.email         = ['open.source@ribose.com']
 
