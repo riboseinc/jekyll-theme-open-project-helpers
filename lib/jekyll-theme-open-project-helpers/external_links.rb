@@ -11,9 +11,10 @@ require 'uri'
 def process_content(site_hostname, content, exclude_selectors=[])
   content = Nokogiri::HTML(content)
   content.css('body.site--project main a, body.site--hub.layout--post main a').each do |a|
-    next unless a.get_attribute('href') =~ /\Ahttp/i
-    next if a.get_attribute('href').include? site_hostname
     next if matches_one_of(a, exclude_selectors)
+    next unless a.get_attribute('href') =~ /\Ahttp/i
+    next if a.get_attribute('href') =~ /\Ahttp(s)?:\/\/#{site_hostname}\//i
+    next if a.inner_html.include? "ico-ext"
     a.set_attribute('rel', 'external')
     a.inner_html = "#{a.inner_html}<span class='ico-ext'><i class='fas fa-external-link-square-alt'></i></span>"
   end
