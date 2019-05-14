@@ -38,7 +38,12 @@ module Jekyll
             if ['.adoc', '.md', '.markdown'].include? ext
               doc = NonLiquidDocument.new(path, :site => @site, :collection => collection)
               doc.read
-              collection.docs << doc
+
+              # Add document to Jekyll document database if it refers to software or spec
+              # (as opposed to be some nested document like README)
+              if doc.url.split('/').size == 4
+                collection.docs << doc
+              end
             else
               collection.files << Jekyll::StaticFile.new(
                 @site,
