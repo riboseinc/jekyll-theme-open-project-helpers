@@ -1,3 +1,12 @@
+def process_author(author)
+  email = author['email']
+  hash = Digest::MD5.hexdigest(email)
+  author['email'] = hash
+  author['plaintext_email'] = email
+  author
+end
+
+
 module Jekyll
   module OpenProjectHelpers
 
@@ -47,11 +56,15 @@ module Jekyll
         # suitable for hotlinking authors’ Gravatar profile pictures.
         posts_combined = posts_combined.sort_by(&:date).reverse.map do |post|
           if post.data.key? 'author'
-            email = post.data['author']['email']
-            hash = Digest::MD5.hexdigest(email)
-            post.data['author']['email'] = hash
-            post.data['author']['plaintext_email'] = email
+            process_author(post.data['author'])
           end
+
+          if post.data.key? 'authors'
+            post.data['authors'].map do |author|
+              process_author(author)
+            end
+          end
+
           post
         end
 
