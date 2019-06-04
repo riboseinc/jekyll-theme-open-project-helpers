@@ -42,6 +42,7 @@ module Jekyll
           project_posts = project_posts.map do |post|
             project_name = post.url.split('/')[2]
             post.data['parent_project'] = projects.detect { |p| p.data['name'] == project_name }
+            post.data['render_with_liquid'] = false
             post
           end
 
