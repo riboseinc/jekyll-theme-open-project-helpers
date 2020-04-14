@@ -131,7 +131,13 @@ end
 def get_all_items(site, collection_name, filter_func)
   # Fetches items of specified type, ordered and prepared for usage in index templates
 
-  items = site.collections[collection_name].docs.select { |item|
+  collection = site.collections[collection_name]
+
+  if collection == nil
+    raise "Collection does not exist: #{collection_name}"
+  end
+
+  items = collection.docs.select { |item|
     filter_func.call(item)
   }
 
