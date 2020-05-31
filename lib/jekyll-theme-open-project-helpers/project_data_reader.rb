@@ -140,10 +140,10 @@ module Jekyll
                       spec_checkout_path
                     end
 
+        repo_checkout = nil
         begin
           repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree])
         rescue
-          repo_checkout = nil
         end
 
         if repo_checkout
@@ -223,10 +223,10 @@ module Jekyll
 
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
+          sw_docs_checkout = nil 
           begin
             sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree])
           rescue
-            sw_docs_checkout = nil 
           end
 
           if sw_docs_checkout
