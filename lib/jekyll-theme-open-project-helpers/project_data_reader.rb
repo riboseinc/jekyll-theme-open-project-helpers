@@ -41,7 +41,7 @@ module Jekyll
 
               # Add document to Jekyll document database if it refers to software or spec
               # (as opposed to be some nested document like README)
-              if doc.url.split('/').size == 4
+              if (doc.url.split('/').size == 4) or (doc.url.split('/').size == 5 and collection.label === 'projects')
                 collection.docs << doc
               end
             else
