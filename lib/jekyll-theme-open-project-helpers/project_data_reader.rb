@@ -30,6 +30,8 @@ module Jekyll
         entries.each do |entry|
           path = File.join(dir, entry)
 
+          Jekyll.logger.debug("OPF:", "Reading entry #{path}")
+
           if File.directory?(path)
             read_project_subdir(path, collection, nested=true)
 
@@ -42,9 +44,13 @@ module Jekyll
               # Add document to Jekyll document database if it refers to software or spec
               # (as opposed to be some nested document like README)
               if (doc.url.split('/').size == 4) or (doc.url.split('/').size == 5 and collection.label === 'projects')
+                Jekyll.logger.debug("OPF:", "Adding document with URL: #{doc.url}")
                 collection.docs << doc
+              else
+                Jekyll.logger.debug("OPF:", "Did NOT add document with URL (nesting level doesn’t match): #{doc.url}")
               end
             else
+              Jekyll.logger.debug("OPF:", "Adding static file: #{path}")
               collection.files << Jekyll::StaticFile.new(
                 @site,
                 @site.source,
@@ -103,6 +109,9 @@ module Jekyll
             project_path,
             project['site']['git_repo_url'],
             ['assets', '_posts', '_software', '_specs'])
+
+          
+          Jekyll.logger.debug("OPF:", "Reading files in project #{project_path}")
 
           CollectionDocReader.new(site).read(
             project_path,
@@ -164,14 +173,23 @@ module Jekyll
       def fetch_and_read_specs(collection_name, build_pages=false)
         # collection_name would be either specs or (for hub site) projects
 
+        Jekyll.logger.debug("OPF:", "Fetching specs for items in collection #{collection_name} (if it exists)")
+
         return unless @site.collections.key?(collection_name)
+
+        Jekyll.logger.debug("OPF:", "Fetching specs for items in collection #{collection_name}")
 
         # Get spec entry points
         entry_points = @site.collections[collection_name].docs.select do |doc|
           doc.data['spec_source']
         end
 
+        if entry_points.size < 1
+          Jekyll.logger.info("OPF:", "Fetching specs for items in collection #{collection_name}: No entry points")
+        end
+
         entry_points.each do |index_doc|
+          Jekyll.logger.debug("OPF:", "Fetching specs: entry point #{index_doc.id} in collection #{collection_name}")
           build_and_read_spec_pages(collection_name, index_doc, build_pages)
         end
       end
@@ -179,14 +197,23 @@ module Jekyll
       def fetch_and_read_software(collection_name)
         # collection_name would be either software or (for hub site) projects
 
+        Jekyll.logger.debug("OPF:", "Fetching software for items in collection #{collection_name} (if it exists)")
+
         return unless @site.collections.key?(collection_name)
+
+        Jekyll.logger.debug("OPF:", "Fetching software for items in collection #{collection_name}")
 
         entry_points = @site.collections[collection_name].docs.select do |doc|
           doc.data['repo_url']
         end
 
+        if entry_points.size < 1
+          Jekyll.logger.info("OPF:", "Fetching software for items in collection #{collection_name}: No entry points")
+        end
+
         entry_points.each do |index_doc|
           item_name = index_doc.id.split('/')[-1]
+          Jekyll.logger.debug("OPF:", "Fetching software: entry point #{index_doc.id} in collection #{collection_name}")
 
           docs = index_doc.data['docs']
           main_repo = index_doc.data['repo_url']
@@ -280,6 +307,7 @@ module Jekyll
                 :modified_at => nil,
               }
             else
+              Jekyll.logger.debug("OPF:", "Fetching & checking out #{remote_url} for #{repo_path}")
               repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
               repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
             end
