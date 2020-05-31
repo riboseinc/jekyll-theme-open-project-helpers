@@ -55,7 +55,7 @@ module Jekyll
           # Creates a data structure like { tag1: [item1, item2], tag2: [item2, item3] }
           tags = {}
           items.each do |item|
-            item.data['tags'].each do |tag|
+            (item.data['tags'] or []).each do |tag|
               unless tags.key? tag
                 tags[tag] = []
               end
