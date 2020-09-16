@@ -12,7 +12,7 @@ fetching open project/software/specification data from their repos.
 ## Releasing
 
 **Release this helpers gem and theme gem in tandem with matching versions.**
-See [Theme gem docs](https://github.com/riboseinc/jekyll-theme-open-project-helpers) for more.
+See [Theme gem docs](https://github.com/riboseinc/jekyll-theme-open-project) for more.
 
 
 1. Inside .gemspec within this repo’s root, update main gem version to the one being released.
