@@ -42,12 +42,14 @@ module Jekyll
               doc.read
 
               # Add document to Jekyll document database if it refers to software or spec
-              # (as opposed to be some nested document like README)
-              if (doc.url.split('/').size == 4) or (doc.url.split('/').size == 5 and collection.label === 'projects')
+              # (as opposed to be some random nested document within repository source, like a README)
+              doc_url_parts = doc.url.split('/')
+              Jekyll.logger.debug("OPF:", "Reading document in collection #{collection.label} with URL #{doc.url} (#{doc_url_parts.size} parts)")
+              if collection.label != 'projects' or doc_url_parts.size == 5
                 Jekyll.logger.debug("OPF:", "Adding document with URL: #{doc.url}")
                 collection.docs << doc
               else
-                Jekyll.logger.debug("OPF:", "Did NOT add document with URL (nesting level doesn’t match): #{doc.url}")
+                Jekyll.logger.debug("OPF:", "Did NOT add document with URL (possibly nesting level doesn’t match): #{doc.url}")
               end
             else
               Jekyll.logger.debug("OPF:", "Adding static file: #{path}")
