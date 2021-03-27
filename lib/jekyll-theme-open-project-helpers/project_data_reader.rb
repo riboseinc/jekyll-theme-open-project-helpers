@@ -140,13 +140,9 @@ module Jekyll
                       spec_checkout_path
                     end
 
-        repo_checkout = nil
-        begin
-          repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree])
-        rescue
-        end
+        repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree])
 
-        if repo_checkout
+        if repo_checkout[:success]
           if build_pages
             builder = Jekyll::OpenProjectHelpers::SpecBuilder::new(
               @site,
@@ -223,13 +219,9 @@ module Jekyll
 
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
-          sw_docs_checkout = nil 
-          begin
-            sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree])
-          rescue
-          end
+          sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree])
 
-          if sw_docs_checkout
+          if sw_docs_checkout[:success]
             CollectionDocReader.new(site).read(
               docs_path,
               @site.collections[collection_name])
@@ -238,7 +230,7 @@ module Jekyll
           # Get last repository modification timestamp.
           # Fetch the repository for that purpose,
           # unless it’s the same as the repo where docs are.
-          if sw_docs_checkout == nil or sw_docs_repo != main_repo
+          if !sw_docs_checkout[:success] or sw_docs_repo != main_repo
             repo_path = "#{index_doc.path.split('/')[0..-2].join('/')}/_#{item_name}_repo"
             repo_checkout = git_shallow_checkout(repo_path, main_repo)
             index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
@@ -296,20 +288,39 @@ module Jekyll
           repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
 
         elsif refresh_condition == 'last-resort'
+          # This is the default case.
+
           begin
+            # Let’s try in case this repo has been fetched before (this would never be the case on CI though)
             repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
           rescue Exception => e
-            if e.message.include? "Sparse checkout leaves no entry on working directory"
-              # Supposedly, software docs are missing! No big deal.
+            if is_sparse_checkout_error(e, sparse_subtrees)
+              # Silence errors caused by nonexistent sparse checkout directories
               return {
                 :success => false,
                 :newly_initialized => nil,
                 :modified_at => nil,
               }
             else
+              # In case of any other error, presume repo has not been fetched and do that now.
               Jekyll.logger.debug("OPF:", "Fetching & checking out #{remote_url} for #{repo_path}")
               repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
-              repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+              begin
+                # Try checkout again
+                repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+              rescue Exception => e
+                if is_sparse_checkout_error(e, sparse_subtrees)
+                  # Again, silence an error caused by nonexistent sparse checkout directories…
+                  return {
+                    :success => false,
+                    :newly_initialized => nil,
+                    :modified_at => nil,
+                  }
+                else
+                  # but this time throw any other error.
+                  raise e
+                end
+              end
             end
           end
         end
@@ -324,6 +335,15 @@ module Jekyll
       end
     end
 
+  end
+end
+
+def is_sparse_checkout_error(err, subtrees)
+  if err.message.include? "Sparse checkout leaves no entry on working directory"
+    Jekyll.logger.debug("OPF: It looks like sparse checkout of these directories failed:", subtrees.to_s)
+    true
+  else
+    false
   end
 end
 
