@@ -6,7 +6,9 @@ module Jekyll
     DEFAULT_DOCS_SUBTREE = 'docs'
 
     DEFAULT_REPO_REMOTE_NAME = 'origin'
-    DEFAULT_REPO_BRANCH = 'master'
+    DEFAULT_REPO_BRANCH = 'main'
+    # Can be overridden by default_repo_branch in site config.
+    # Used by shallow_git_checkout.
 
     class NonLiquidDocument < Jekyll::Document
       def render_with_liquid?
@@ -95,7 +97,8 @@ module Jekyll
           git_shallow_checkout(
             File.join(@site.source, 'parent-hub'),
             @site.config['parent_hub']['git_repo_url'],
-            ['assets', 'title.html'])
+            ['assets', 'title.html'],
+            @site.config['parent_hub']['git_repo_branch'])
         end
       end
 
@@ -110,7 +113,8 @@ module Jekyll
           git_shallow_checkout(
             project_path,
             project['site']['git_repo_url'],
-            ['assets', '_posts', '_software', '_specs'])
+            ['assets', '_posts', '_software', '_specs'],
+            project['site']['git_repo_branch'])
 
           
           Jekyll.logger.debug("OPF:", "Reading files in project #{project_path}")
@@ -131,6 +135,7 @@ module Jekyll
         src = index_doc.data['spec_source']
         repo_url = src['git_repo_url']
         repo_subtree = src['git_repo_subtree']
+        repo_branch = src['git_repo_branch']
         build = src['build']
         engine = build['engine']
         engine_opts = build['options'] || {}
@@ -142,7 +147,7 @@ module Jekyll
                       spec_checkout_path
                     end
 
-        repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree])
+        repo_checkout = git_shallow_checkout(spec_checkout_path, repo_url, [repo_subtree], repo_branch)
 
         if repo_checkout[:success]
           if build_pages
@@ -215,13 +220,15 @@ module Jekyll
 
           docs = index_doc.data['docs']
           main_repo = index_doc.data['repo_url']
+          main_repo_branch = index_doc.data['repo_branch']
 
           sw_docs_repo = (if docs then docs['git_repo_url'] end) || main_repo
           sw_docs_subtree = (if docs then docs['git_repo_subtree'] end) || DEFAULT_DOCS_SUBTREE
+          sw_docs_branch = (if docs then docs['git_repo_branch'] end) || nil
 
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
-          sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree])
+          sw_docs_checkout = git_shallow_checkout(docs_path, sw_docs_repo, [sw_docs_subtree], sw_docs_branch)
 
           if sw_docs_checkout[:success]
             CollectionDocReader.new(site).read(
@@ -234,7 +241,7 @@ module Jekyll
           # unless it’s the same as the repo where docs are.
           if !sw_docs_checkout[:success] or sw_docs_repo != main_repo
             repo_path = "#{index_doc.path.split('/')[0..-2].join('/')}/_#{item_name}_repo"
-            repo_checkout = git_shallow_checkout(repo_path, main_repo)
+            repo_checkout = git_shallow_checkout(repo_path, main_repo, [], main_repo_branch)
             index_doc.merge_data!({ 'last_update' => repo_checkout[:modified_at] })
           else
             index_doc.merge_data!({ 'last_update' => sw_docs_checkout[:modified_at] })
@@ -242,7 +249,7 @@ module Jekyll
         end
       end
 
-      def git_shallow_checkout(repo_path, remote_url, sparse_subtrees=[])
+      def git_shallow_checkout(repo_path, remote_url, sparse_subtrees, branch_name)
         # Returns hash with timestamp of latest repo commit
         # and boolean signifying whether new repo has been initialized
         # in the process of pulling the data.
@@ -279,6 +286,7 @@ module Jekyll
         end
 
         refresh_condition = @@siteconfig['refresh_remote_data'] || 'last-resort'
+        repo_branch = branch_name || @@siteconfig['default_repo_branch'] || DEFAULT_REPO_BRANCH
 
         unless ['always', 'last-resort', 'skip'].include?(refresh_condition)
           raise RuntimeError.new('Invalid refresh_remote_data value in site’s _config.yml!')
@@ -287,14 +295,14 @@ module Jekyll
         if refresh_condition == 'always'
           repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
           repo.reset_hard
-          repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+          repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{repo_branch}", { :f => true })
 
         elsif refresh_condition == 'last-resort'
           # This is the default case.
 
           begin
             # Let’s try in case this repo has been fetched before (this would never be the case on CI though)
-            repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+            repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{repo_branch}", { :f => true })
           rescue Exception => e
             if is_sparse_checkout_error(e, sparse_subtrees)
               # Silence errors caused by nonexistent sparse checkout directories
@@ -309,7 +317,7 @@ module Jekyll
               repo.fetch(DEFAULT_REPO_REMOTE_NAME, { :depth => 1 })
               begin
                 # Try checkout again
-                repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{DEFAULT_REPO_BRANCH}", { :f => true })
+                repo.checkout("#{DEFAULT_REPO_REMOTE_NAME}/#{repo_branch}", { :f => true })
               rescue Exception => e
                 if is_sparse_checkout_error(e, sparse_subtrees)
                   # Again, silence an error caused by nonexistent sparse checkout directories…
