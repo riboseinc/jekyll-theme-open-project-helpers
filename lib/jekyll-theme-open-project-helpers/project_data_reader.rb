@@ -224,7 +224,7 @@ module Jekyll
 
           sw_docs_repo = (if docs then docs['git_repo_url'] end) || main_repo
           sw_docs_subtree = (if docs then docs['git_repo_subtree'] end) || DEFAULT_DOCS_SUBTREE
-          sw_docs_branch = (if docs then docs['git_repo_branch'] end) || nil
+          sw_docs_branch = (if docs then docs['git_repo_branch'] end) || main_repo_branch
 
           docs_path = "#{index_doc.path.split('/')[0..-2].join('/')}/#{item_name}"
 
