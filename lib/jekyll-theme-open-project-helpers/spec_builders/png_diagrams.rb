@@ -64,7 +64,7 @@ module Builder
       } [0].clone
 
       if nav_item == nil
-        warn "Navigation item matching #{png_name} (#{spec_root}) was not found"
+        warn "UNUSED PNG: #{png_name} detected at source without a corresponding navigation item at (#{spec_root})."
         next
       end
 
@@ -92,7 +92,7 @@ module Builder
 
     not_found_items.each do |item|
       title = item["title"]
-      warn "Image for navigation item '#{title}' (#{spec_root}) was not found"
+      warn "SPECIFIED PNG NOT FOUND: #{title}.png not found at source as specified at (#{spec_root})."
     end
 
     return pages
