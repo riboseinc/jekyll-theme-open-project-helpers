@@ -53,6 +53,7 @@ module Builder
     pages = []
 
     diagram_nav_items = get_nav_items_with_path(spec_info.data['navigation']['items'])
+    not_found_items = diagram_nav_items.dup
 
     Dir.glob("#{images_path}/*.png") do |pngfile|
       png_name = File.basename(pngfile)
@@ -62,15 +63,18 @@ module Builder
         item['path'].start_with?(png_name_noext)
       } [0].clone
 
+      if nav_item == nil
+        warn "Navigation item matching #{png_name} (#{spec_root}) was not found"
+        next
+      end
+
+      not_found_items.delete_if { |item| item["title"] == nav_item["title"] }
+
       png_dimensions = FastImage.size(pngfile)
       data = spec_info.data.clone
       data['image_path'] = "/#{spec_root}/images/#{png_name}"
       data['image_width'] = png_dimensions[0]
       data['image_height'] = png_dimensions[1]
-
-      if nav_item == nil
-        raise "Navigation item matching #{png_name} (#{spec_root}) was not found"
-      end
 
       data = data.merge(nav_item)
 
@@ -84,6 +88,11 @@ module Builder
         data)
       page.content = File.read(stub_path)
       pages << page
+    end
+
+    not_found_items.each do |item|
+      title = item["title"]
+      warn "Image for navigation item '#{title}' (#{spec_root}) was not found"
     end
 
     return pages
