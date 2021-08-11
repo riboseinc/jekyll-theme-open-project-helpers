@@ -18,6 +18,12 @@ fetching open project/software/specification data from their repos.
 
 ## Releasing
 
+### New approach
+
+Do git tag or, start release manually with [`release.yml` workflow](https://github.com/riboseinc/jekyll-theme-open-project-helpers/actions/workflows/release.yml)
+
+### Old approach (DEPRECATED)
+
 **Release this helpers gem and theme gem in tandem with matching versions.**
 See [Theme gem docs](https://github.com/riboseinc/jekyll-theme-open-project) for more.
 
