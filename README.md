@@ -20,21 +20,5 @@ fetching open project/software/specification data from their repos.
 
 ### New approach
 
-Do git tag or, start release manually with [`release.yml` workflow](https://github.com/riboseinc/jekyll-theme-open-project-helpers/actions/workflows/release.yml)
-
-### Old approach (DEPRECATED)
-
-**Release this helpers gem and theme gem in tandem with matching versions.**
-See [Theme gem docs](https://github.com/riboseinc/jekyll-theme-open-project) for more.
-
-
-1. Inside .gemspec within this repo’s root, update main gem version to the one being released.
-
-2. Make a commit for the new release (“chore: Release vX.X.X”).
-
-3. Execute `./develop/release`. This does the following:
-
-   * Builds new gem version
-   * Pushes gem to rubygems.org
-   * Creates new version tag in this repository
-   * Pushes changes to GitHub
+Do `git tag ${version-tag}` or, start release manually with the
+[`release.yml` workflow](https://github.com/riboseinc/jekyll-theme-open-project-helpers/actions/workflows/release.yml)
