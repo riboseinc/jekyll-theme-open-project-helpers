@@ -260,7 +260,7 @@ module Jekyll
         git_dir = File.join(repo_path, '.git')
         git_info_dir = File.join(git_dir, 'info')
         git_sparse_checkout_file = File.join(git_dir, 'info', 'sparse-checkout')
-        unless File.exists? git_dir
+        unless File.exist? git_dir
           newly_initialized = true
 
           repo = Git.init(repo_path)
